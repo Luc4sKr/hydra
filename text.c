@@ -12,7 +12,13 @@
 
 /*** data ***/
 
-struct termios orig_termios;
+struct editorConfig {
+    int screen_rows;
+    int screen_cols;
+    struct termios orig_termios;
+};
+
+struct editorConfig e_config;
 
 /*** terminal ***/
 
@@ -24,17 +30,17 @@ void die(const char *s) {
 }
 
 void disableRawMode() {
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios))
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &e_config.orig_termios))
         die("tcsetattr");
 }
 
 void enableRawMode() {
-    if (tcgetattr(STDIN_FILENO, &orig_termios))
+    if (tcgetattr(STDIN_FILENO, &e_config.orig_termios))
         die("tcgetattr");
     
     atexit(disableRawMode);
 
-    struct termios raw = orig_termios;
+    struct termios raw = e_config.orig_termios;
 
     // desativa algumas flags
     raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
@@ -61,12 +67,29 @@ char editorReadKey() {
     return c;
 }
 
+int getWindowSize(int *rows, int *cols) {
+    struct winsize ws;
+
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
+        return -1;
+    } else {
+        *cols = ws.ws_col;
+        *rows = ws.ws_row;
+        return 0;
+    }
+}
+
 /*** output ***/
 void editorDrawRows() {
-    struct winsize win;
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &win);
+    for (int i = 0; i < e_config.screen_rows; i++) {
+        if (i == e_config.screen_rows / 3) {
+            char welcome[80];
 
-    for (int i = 0; i < win.ws_row; i++) {
+            int welcomelen = snprintf(welcome, sizeof(welcome), "text editor - version %s", TEXT_EDITOR_VERSION);
+
+            if (welcomelen > e_config.screen_cols) welcomelen = e_config.screen_cols;
+        }
+
         write(STDOUT_FILENO, "~\r\n", 3);
     }
 }
@@ -95,9 +118,14 @@ void editorProcessKeypress() {
 }
 
 /*** init ***/
+void initEditor() {
+    if (getWindowSize(&e_config.screen_rows, &e_config.screen_cols) == -1)
+        die("getWindowSize");
+}
 
 int main() {
     enableRawMode();
+    initEditor();
 
     while (1) {
         editorRefreshScreen();
