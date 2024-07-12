@@ -9,16 +9,7 @@
 #include <errno.h>
 
 #include "config.h"
-
-/*** data ***/
-
-struct editorConfig {
-    int screen_rows;
-    int screen_cols;
-    struct termios orig_termios;
-};
-
-struct editorConfig e_config;
+#include "editor.h"
 
 /*** terminal ***/
 
@@ -67,11 +58,37 @@ char editorReadKey() {
     return c;
 }
 
+int getCursorPosition(int *rows, int *cols) {
+    char buffer[32];
+    unsigned int i = 0;
+
+    if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
+        return -1;
+
+    while (i < sizeof(buffer) -1) {
+        if (read(STDIN_FILENO, &buffer[i], 1) != 1) break;
+        if (buffer[i] == 'R') break;
+        i++;
+    }
+
+    buffer[i] = '\0';
+
+    if (buffer[0] != '\x1b' || buffer[1] != '[') return -1;
+    if (sscanf(&buffer[2], "%d;%d", rows, cols) != 2) return -1;
+
+    return 0;
+}
+
 int getWindowSize(int *rows, int *cols) {
     struct winsize ws;
 
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
-        return -1;
+        // move o cursor para o final da tela
+        if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12) {
+            return -1;
+        }
+
+        return getCursorPosition(rows, cols);
     } else {
         *cols = ws.ws_col;
         *rows = ws.ws_row;
@@ -82,15 +99,11 @@ int getWindowSize(int *rows, int *cols) {
 /*** output ***/
 void editorDrawRows() {
     for (int i = 0; i < e_config.screen_rows; i++) {
-        if (i == e_config.screen_rows / 3) {
-            char welcome[80];
+        write(STDOUT_FILENO, "~", 1);
 
-            int welcomelen = snprintf(welcome, sizeof(welcome), "text editor - version %s", TEXT_EDITOR_VERSION);
-
-            if (welcomelen > e_config.screen_cols) welcomelen = e_config.screen_cols;
+        if (i < e_config.screen_rows - 1) {
+            write(STDERR_FILENO, "\r\n", 2);
         }
-
-        write(STDOUT_FILENO, "~\r\n", 3);
     }
 }
 
