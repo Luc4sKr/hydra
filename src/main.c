@@ -1,5 +1,3 @@
-/*** includes ***/
-
 #include <sys/ioctl.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -7,6 +5,7 @@
 #include <unistd.h>
 #include <termios.h>
 #include <errno.h>
+#include <string.h>
 
 #include "config.h"
 #include "editor.h"
@@ -96,24 +95,44 @@ int getWindowSize(int *rows, int *cols) {
     }
 }
 
+/*** append buffer ****/
+void abuffAppend(struct abuff *ab, const char *s, int len) {
+    char *new = realloc(ab->b, ab->len + len);
+
+    if (new == NULL) return;
+
+    memcpy(&new[ab->len], s, len);
+    ab->b = new;
+    ab->len += len;
+}
+
+void abuffFree(struct abuff *ab) {
+    free(ab->b);
+}
+
 /*** output ***/
-void editorDrawRows() {
+void editorDrawRows(struct abuff *ab) {
     for (int i = 0; i < e_config.screen_rows; i++) {
-        write(STDOUT_FILENO, "~", 1);
+        abuffAppend(ab, "~", 1);
 
         if (i < e_config.screen_rows - 1) {
-            write(STDERR_FILENO, "\r\n", 2);
+            abuffAppend(ab, "\r\n", 2);
         }
     }
 }
 
 void editorRefreshScreen() {
-    write(STDOUT_FILENO, "\x1b[2J", 4);
-    write(STDOUT_FILENO, "\x1b[H", 3);
+    struct abuff ab = ABUFF_INIT;
 
-    editorDrawRows();
+    abuffAppend(&ab, "\x1b[2J", 4);
+    abuffAppend(&ab, "\x1b[H", 3);
 
-    write(STDOUT_FILENO, "\x1b[H", 3);
+    editorDrawRows(&ab);
+
+    abuffAppend(&ab, "\x1b[H", 3);
+
+    write(STDOUT_FILENO, ab.b, ab.len);
+    abuffFree(&ab);
 }
 
 /*** input ***/

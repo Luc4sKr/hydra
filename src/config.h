@@ -5,4 +5,6 @@
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 
+#define ABUFF_INIT {NULL, 0}
+
 #endif

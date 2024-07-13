@@ -11,4 +11,10 @@ struct editorConfig {
 
 struct editorConfig e_config;
 
+// append buffer
+struct abuff {
+    char* b;
+    int len;
+};
+
 #endif
