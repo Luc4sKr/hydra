@@ -113,8 +113,31 @@ void abuffFree(struct abuff *ab) {
 /*** output ***/
 void editorDrawRows(struct abuff *ab) {
     for (int i = 0; i < e_config.screen_rows; i++) {
-        abuffAppend(ab, "~", 1);
+        if (i == e_config.screen_rows / 3) {
+            char welcome[80];
+            int welcomelen = snprintf(welcome, sizeof(welcome),
+                "HYDRA TEXT -- VERSION %s", HYDRA_VERSION);
+            
+            if (welcomelen > e_config.screen_cols) {
+                welcomelen = e_config.screen_cols;
+            }
 
+            int padding = (e_config.screen_cols - welcomelen) / 2;
+            if (padding) {
+                abuffAppend(ab, "~", 1);
+                padding--;
+            }
+
+            while (padding--) {
+                abuffAppend(ab, " ", 1);
+            }
+            
+            abuffAppend(ab, welcome, welcomelen);
+        } else {
+            abuffAppend(ab, "~", 1);
+        }
+
+        abuffAppend(ab, "\x1b[K", 3);
         if (i < e_config.screen_rows - 1) {
             abuffAppend(ab, "\r\n", 2);
         }
@@ -124,18 +147,39 @@ void editorDrawRows(struct abuff *ab) {
 void editorRefreshScreen() {
     struct abuff ab = ABUFF_INIT;
 
-    abuffAppend(&ab, "\x1b[2J", 4);
+    abuffAppend(&ab, "\x1b[?25l", 6);
     abuffAppend(&ab, "\x1b[H", 3);
 
     editorDrawRows(&ab);
 
-    abuffAppend(&ab, "\x1b[H", 3);
+    char buf[32];
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", e_config.cy + 1, e_config.cx + 1);
+    abuffAppend(&ab, buf, strlen(buf));
+    
+    abuffAppend(&ab, "\x1b[?25h", 6);
 
     write(STDOUT_FILENO, ab.b, ab.len);
     abuffFree(&ab);
 }
 
 /*** input ***/
+
+void editorMoveCursor(char key) {
+    switch (key) {
+        case 'w':
+            e_config.cy--;
+            break;
+        case 'a':
+            e_config.cx--;
+            break;
+        case 's':
+            e_config.cy++;
+            break;
+        case 'd':
+            e_config.cx++;
+            break;
+    }
+}
 
 void editorProcessKeypress() {
     char c = editorReadKey();
@@ -146,11 +190,21 @@ void editorProcessKeypress() {
             write(STDOUT_FILENO, "\x1b[H", 3);
             exit(0);
             break;
+        case 'w':
+        case 'a':
+        case 's':
+        case 'd':
+            editorMoveCursor(c);
+            break;
     }
 }
 
 /*** init ***/
+
 void initEditor() {
+    e_config.cx = 0;
+    e_config.cy = 0;
+
     if (getWindowSize(&e_config.screen_rows, &e_config.screen_cols) == -1)
         die("getWindowSize");
 }

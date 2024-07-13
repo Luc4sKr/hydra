@@ -4,6 +4,8 @@
 #include <termio.h>
 
 struct editorConfig {
+    int cx;
+    int cy;
     int screen_rows;
     int screen_cols;
     struct termios orig_termios;
