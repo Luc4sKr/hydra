@@ -25,7 +25,10 @@ enum editorKey {
     ARROW_UP = 1000,
     ARROW_LEFT = 1001,
     ARROW_DOWN = 1002,
-    ARROW_RIGHT = 1003
+    ARROW_RIGHT = 1003,
+
+    PAGE_UP = 1004,
+    PAGE_DOWN = 1005
 };
 
 #endif
