@@ -45,7 +45,7 @@ void enableRawMode() {
         die("tcsetattr");
 }
 
-char editorReadKey() {
+int editorReadKey() {
     int nread;
     char c;
 
@@ -54,7 +54,31 @@ char editorReadKey() {
             die("read");
     }
 
-    return c;
+    if (c == '\x1b') {
+        char seq[3];
+
+        if (read(STDIN_FILENO, &seq[0], 1) != 1) {
+            return '\x1b';
+        }
+
+        if (read(STDIN_FILENO, &seq[1], 1) != 1) {
+            return '\x1b';
+        }
+
+        if (seq[0] == '[') {
+            switch (seq[1]) {
+                case 'A': return ARROW_UP;
+                case 'B': return ARROW_DOWN;
+                case 'C': return ARROW_RIGHT;
+                case 'D': return ARROW_LEFT;
+            }
+        }
+
+        return '\x1b';
+    } else {
+        return c;
+    }
+
 }
 
 int getCursorPosition(int *rows, int *cols) {
@@ -164,25 +188,33 @@ void editorRefreshScreen() {
 
 /*** input ***/
 
-void editorMoveCursor(char key) {
+void editorMoveCursor(int key) {
     switch (key) {
-        case 'w':
-            e_config.cy--;
+        case ARROW_UP:
+            if (e_config.cy != 0) {
+                e_config.cy--;
+            }
             break;
-        case 'a':
-            e_config.cx--;
+        case ARROW_LEFT:
+            if (e_config.cx != 0) {
+                e_config.cx--;
+            }
             break;
-        case 's':
-            e_config.cy++;
+        case ARROW_DOWN:
+            if (e_config.cy != e_config.screen_rows - 1) {
+                e_config.cy++;
+            } 
             break;
-        case 'd':
-            e_config.cx++;
+        case ARROW_RIGHT:
+            if (e_config.cx != e_config.screen_cols - 1) {
+                e_config.cx++;
+            }
             break;
     }
 }
 
 void editorProcessKeypress() {
-    char c = editorReadKey();
+    int c = editorReadKey();
 
     switch (c) {
         case CTRL_KEY('q'):
@@ -190,10 +222,10 @@ void editorProcessKeypress() {
             write(STDOUT_FILENO, "\x1b[H", 3);
             exit(0);
             break;
-        case 'w':
-        case 'a':
-        case 's':
-        case 'd':
+        case ARROW_UP:
+        case ARROW_LEFT:
+        case ARROW_DOWN:
+        case ARROW_RIGHT:
             editorMoveCursor(c);
             break;
     }

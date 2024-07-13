@@ -19,4 +19,13 @@ struct abuff {
     int len;
 };
 
+enum editorKey {
+    // valores grandes para não gerarem conflito com
+    // nenhum pressionamento de tecla comum
+    ARROW_UP = 1000,
+    ARROW_LEFT = 1001,
+    ARROW_DOWN = 1002,
+    ARROW_RIGHT = 1003
+};
+
 #endif
