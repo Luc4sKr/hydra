@@ -5,9 +5,10 @@ BIN = ./bin
 
 CFLAGS = -Wall -Wextra -pedantic -std=c99
 
-SRCS = $(SRC)/main.c 	\
-		$(SRC)/editor.c \
-		$(SRC)/fileio.c
+SRCS = $(SRC)/main.c 	  \
+		$(SRC)/editor.c   \
+		$(SRC)/fileio.c   \
+		$(SRC)/terminal.c
 
 OBJS = $(patsubst $(SRC)/%.c,$(OBJ)/%.o,$(SRCS))
 
