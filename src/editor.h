@@ -14,7 +14,7 @@ struct editorConfig {
     int screenrows;
     int screencols;
     int numrows;
-    editor_row row;
+    editor_row* row;
     struct termios orig_termios;
 };
 
@@ -42,5 +42,7 @@ enum editorKey {
 
     DEL_KEY = 1008,
 };
+
+void editorAppendRows(char* s, size_t len);
 
 #endif

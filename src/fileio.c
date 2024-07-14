@@ -20,18 +20,13 @@ void editorOpen(char* filename) {
 
     char* line = NULL;
     size_t linecap = 0;
-    ssize_t linelen = getline(&line, &linecap, fp);
-
-    if (linelen != -1) {
+    ssize_t linelen;
+    while ((linelen = getline(&line, &linecap, fp)) != -1) {
         while (linelen > 0 && (line[linelen - 1] == '\n' || line[linelen - 1] == '\r')) {
             linelen--;
         }
 
-        e_config.row.size = linelen;
-        e_config.row.chars = malloc(linelen + 1);
-        memcpy(e_config.row.chars, line, linelen);
-        e_config.row.chars[linelen] = '\0';
-        e_config.numrows = 1;
+        editorAppendRows(line, linelen);
     }
 
     free(line);

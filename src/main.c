@@ -56,12 +56,12 @@ void editorDrawRows(struct abuff *ab) {
                 abuffAppend(ab, "~", 1);
             }
         } else {
-            int len = e_config.row.size;
+            int len = e_config.row[i].size;
             if (len > e_config.screencols) {
                 len = e_config.screencols;
             }
 
-            abuffAppend(ab, e_config.row.chars, len);
+            abuffAppend(ab, e_config.row[i].chars, len);
         }
 
         abuffAppend(ab, "\x1b[K", 3);
@@ -158,6 +158,7 @@ void initEditor() {
     e_config.cx = 0;
     e_config.cy = 0;
     e_config.numrows = 0;
+    e_config.row = NULL;
 
     if (getWindowSize(&e_config.screenrows, &e_config.screencols) == -1)
         die("getWindowSize");
