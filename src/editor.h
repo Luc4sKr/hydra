@@ -3,15 +3,22 @@
 
 #include <termio.h>
 
+typedef struct editor_row {
+    int size;
+    char *chars;
+} editor_row;
+
 struct editorConfig {
     int cx;
     int cy;
-    int screen_rows;
-    int screen_cols;
+    int screenrows;
+    int screencols;
+    int numrows;
+    editor_row row;
     struct termios orig_termios;
 };
 
-struct editorConfig e_config;
+extern struct editorConfig e_config;
 
 // append buffer
 struct abuff {

@@ -1,4 +1,5 @@
 #include <sys/ioctl.h>
+#include <sys/types.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +9,7 @@
 #include <string.h>
 
 #include "config.h"
+#include "fileio.h"
 #include "editor.h"
 
 /*** terminal ***/
@@ -144,6 +146,7 @@ int getWindowSize(int *rows, int *cols) {
 }
 
 /*** append buffer ****/
+
 void abuffAppend(struct abuff *ab, const char *s, int len) {
     char *new = realloc(ab->b, ab->len + len);
 
@@ -159,34 +162,44 @@ void abuffFree(struct abuff *ab) {
 }
 
 /*** output ***/
+
 void editorDrawRows(struct abuff *ab) {
-    for (int i = 0; i < e_config.screen_rows; i++) {
-        if (i == e_config.screen_rows / 3) {
-            char welcome[80];
-            int welcomelen = snprintf(welcome, sizeof(welcome),
-                "HYDRA TEXT -- VERSION %s", HYDRA_VERSION);
-            
-            if (welcomelen > e_config.screen_cols) {
-                welcomelen = e_config.screen_cols;
-            }
+    for (int i = 0; i < e_config.screenrows; i++) {
+        if (i >= e_config.numrows) {
+            if (i == e_config.screenrows / 3) {
+                char welcome[80];
+                int welcomelen = snprintf(welcome, sizeof(welcome),
+                    "HYDRA TEXT -- VERSION %s", HYDRA_VERSION);
+                
+                if (welcomelen > e_config.screencols) {
+                    welcomelen = e_config.screencols;
+                }
 
-            int padding = (e_config.screen_cols - welcomelen) / 2;
-            if (padding) {
+                int padding = (e_config.screencols - welcomelen) / 2;
+                if (padding) {
+                    abuffAppend(ab, "~", 1);
+                    padding--;
+                }
+
+                while (padding--) {
+                    abuffAppend(ab, " ", 1);
+                }
+                
+                abuffAppend(ab, welcome, welcomelen);
+            } else {
                 abuffAppend(ab, "~", 1);
-                padding--;
+            }
+        } else {
+            int len = e_config.row.size;
+            if (len > e_config.screencols) {
+                len = e_config.screencols;
             }
 
-            while (padding--) {
-                abuffAppend(ab, " ", 1);
-            }
-            
-            abuffAppend(ab, welcome, welcomelen);
-        } else {
-            abuffAppend(ab, "~", 1);
+            abuffAppend(ab, e_config.row.chars, len);
         }
 
         abuffAppend(ab, "\x1b[K", 3);
-        if (i < e_config.screen_rows - 1) {
+        if (i < e_config.screenrows - 1) {
             abuffAppend(ab, "\r\n", 2);
         }
     }
@@ -225,12 +238,12 @@ void editorMoveCursor(int key) {
             }
             break;
         case ARROW_DOWN:
-            if (e_config.cy != e_config.screen_rows - 1) {
+            if (e_config.cy != e_config.screenrows - 1) {
                 e_config.cy++;
             } 
             break;
         case ARROW_RIGHT:
-            if (e_config.cx != e_config.screen_cols - 1) {
+            if (e_config.cx != e_config.screencols - 1) {
                 e_config.cx++;
             }
             break;
@@ -250,7 +263,7 @@ void editorProcessKeypress() {
         case PAGE_UP:
         case PAGE_DOWN:
             {
-                int times = e_config.screen_rows;
+                int times = e_config.screenrows;
                 while (times--) {
                     editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
                 }
@@ -261,7 +274,7 @@ void editorProcessKeypress() {
             e_config.cx = 0;
             break;
         case END_KEY:
-            e_config.cx = e_config.screen_cols - 1;
+            e_config.cx = e_config.screencols - 1;
             break;
 
         case ARROW_UP:
@@ -278,14 +291,16 @@ void editorProcessKeypress() {
 void initEditor() {
     e_config.cx = 0;
     e_config.cy = 0;
+    e_config.numrows = 0;
 
-    if (getWindowSize(&e_config.screen_rows, &e_config.screen_cols) == -1)
+    if (getWindowSize(&e_config.screenrows, &e_config.screencols) == -1)
         die("getWindowSize");
 }
 
 int main() {
     enableRawMode();
     initEditor();
+    editorOpen();
 
     while (1) {
         editorRefreshScreen();
