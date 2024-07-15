@@ -48,5 +48,7 @@ enum editorKey {
 void initEditor();
 void editorScroll();
 void editorAppendRows(char* s, size_t len);
+void editorMoveCursor(int key);
+void editorProcessKeypress();
 
 #endif

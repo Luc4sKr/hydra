@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <string.h>
 
 #include "editor.h"
 #include "terminal.h"
+#include "config.h"
 
 struct editorConfig e_config;
 
@@ -46,4 +49,81 @@ void editorAppendRows(char* s, size_t len) {
     memcpy(e_config.row[at].chars, s, len);
     e_config.row[at].chars[len] = '\0';
     e_config.numrows++;
+}
+
+void editorMoveCursor(int key) {
+    editor_row* row = (e_config.cy >= e_config.numrows) ? NULL : &e_config.row[e_config.cy];
+
+    switch (key) {
+        case ARROW_UP:
+            if (e_config.cy != 0) {
+                e_config.cy--;
+            }
+            break;
+        case ARROW_LEFT:
+            if (e_config.cx != 0) {
+                e_config.cx--;
+            } else if (e_config.cy > 0) {
+                e_config.cy--;
+                e_config.cx = e_config.row[e_config.cy].size;
+            }
+            break;
+        case ARROW_DOWN:
+            if (e_config.cy < e_config.numrows) {
+                e_config.cy++;
+            }
+            break;
+        case ARROW_RIGHT:
+            if (row && e_config.cx < row->size) {
+                e_config.cx++;
+            } else if (row && e_config.cx == row->size) {
+                e_config.cy++;
+                e_config.cx = 0;
+            }
+            break;
+    }
+
+    // move o cursor para o fim da linha quando cx > que a linha
+    row = (e_config.cy >= e_config.numrows) ? NULL : &e_config.row[e_config.cy];
+    int rowlen = row ? row->size : 0;
+
+    if (e_config.cx > rowlen) {
+        e_config.cx = rowlen;
+    }
+}
+
+void editorProcessKeypress() {
+    int c = editorReadKey();
+
+    switch (c) {
+        case CTRL_KEY('q'):
+            write(STDOUT_FILENO, "\x1b[2J", 4);
+            write(STDOUT_FILENO, "\x1b[H", 3);
+            exit(0);
+            break;
+
+        case PAGE_UP:
+        case PAGE_DOWN:
+        {
+            int times = e_config.screenrows;
+            while (times--) {
+                editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+            }
+        }
+        break;
+
+        case HOME_KEY:
+            e_config.cx = 0;
+            break;
+        case END_KEY:
+            e_config.cx = e_config.screencols - 1;
+            break;
+
+        case ARROW_UP:
+        case ARROW_LEFT:
+        case ARROW_DOWN:
+        case ARROW_RIGHT:
+            editorMoveCursor(c);
+            break;
+    }
 }

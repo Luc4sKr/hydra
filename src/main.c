@@ -98,67 +98,6 @@ void editorRefreshScreen() {
     abuffFree(&ab);
 }
 
-/*** input ***/
-
-void editorMoveCursor(int key) {
-    switch (key) {
-        case ARROW_UP:
-            if (e_config.cy != 0) {
-                e_config.cy--;
-            }
-            break;
-        case ARROW_LEFT:
-            if (e_config.cx != 0) {
-                e_config.cx--;
-            }
-            break;
-        case ARROW_DOWN:
-            if (e_config.cy < e_config.numrows) {
-                e_config.cy++;
-            }
-            break;
-        case ARROW_RIGHT:
-            e_config.cx++;
-            break;
-    }
-}
-
-void editorProcessKeypress() {
-    int c = editorReadKey();
-
-    switch (c) {
-        case CTRL_KEY('q'):
-            write(STDOUT_FILENO, "\x1b[2J", 4);
-            write(STDOUT_FILENO, "\x1b[H", 3);
-            exit(0);
-            break;
-
-        case PAGE_UP:
-        case PAGE_DOWN:
-        {
-            int times = e_config.screenrows;
-            while (times--) {
-                editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
-            }
-        }
-        break;
-
-        case HOME_KEY:
-            e_config.cx = 0;
-            break;
-        case END_KEY:
-            e_config.cx = e_config.screencols - 1;
-            break;
-
-        case ARROW_UP:
-        case ARROW_LEFT:
-        case ARROW_DOWN:
-        case ARROW_RIGHT:
-            editorMoveCursor(c);
-            break;
-    }
-}
-
 int main(int argc, char *argv[]) {
     enableRawMode();
     initEditor();
