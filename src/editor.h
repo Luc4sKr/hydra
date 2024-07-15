@@ -11,6 +11,7 @@ typedef struct editor_row {
 struct editorConfig {
     int cx;
     int cy;
+    int rowoff;
     int screenrows;
     int screencols;
     int numrows;
@@ -43,6 +44,8 @@ enum editorKey {
     DEL_KEY = 1008,
 };
 
+void initEditor();
+void editorScroll();
 void editorAppendRows(char* s, size_t len);
 
 #endif

@@ -16,7 +16,8 @@
 void abuffAppend(struct abuff *ab, const char *s, int len) {
     char *new = realloc(ab->b, ab->len + len);
 
-    if (new == NULL) return;
+    if (new == NULL)
+        return;
 
     memcpy(&new[ab->len], s, len);
     ab->b = new;
@@ -31,11 +32,11 @@ void abuffFree(struct abuff *ab) {
 
 void editorDrawRows(struct abuff *ab) {
     for (int i = 0; i < e_config.screenrows; i++) {
-        if (i >= e_config.numrows) {
+        int filerow = i + e_config.rowoff;
+        if (filerow >= e_config.numrows) {
             if (e_config.numrows == 0 && i == e_config.screenrows / 3) {
                 char welcome[80];
-                int welcomelen = snprintf(welcome, sizeof(welcome),
-                    "HYDRA TEXT -- VERSION %s", HYDRA_VERSION);
+                int welcomelen = snprintf(welcome, sizeof(welcome), "HYDRA EDITOR -- VERSION %s", HYDRA_VERSION);
                 
                 if (welcomelen > e_config.screencols) {
                     welcomelen = e_config.screencols;
@@ -50,18 +51,18 @@ void editorDrawRows(struct abuff *ab) {
                 while (padding--) {
                     abuffAppend(ab, " ", 1);
                 }
-                
+
                 abuffAppend(ab, welcome, welcomelen);
             } else {
                 abuffAppend(ab, "~", 1);
             }
         } else {
-            int len = e_config.row[i].size;
+            int len = e_config.row[filerow].size;
             if (len > e_config.screencols) {
                 len = e_config.screencols;
             }
 
-            abuffAppend(ab, e_config.row[i].chars, len);
+            abuffAppend(ab, e_config.row[filerow].chars, len);
         }
 
         abuffAppend(ab, "\x1b[K", 3);
@@ -72,6 +73,8 @@ void editorDrawRows(struct abuff *ab) {
 }
 
 void editorRefreshScreen() {
+    editorScroll();
+
     struct abuff ab = ABUFF_INIT;
 
     abuffAppend(&ab, "\x1b[?25l", 6);
@@ -80,9 +83,9 @@ void editorRefreshScreen() {
     editorDrawRows(&ab);
 
     char buf[32];
-    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", e_config.cy + 1, e_config.cx + 1);
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (e_config.cy - e_config.rowoff) + 1, e_config.cx + 1);
     abuffAppend(&ab, buf, strlen(buf));
-    
+
     abuffAppend(&ab, "\x1b[?25h", 6);
 
     write(STDOUT_FILENO, ab.b, ab.len);
@@ -104,9 +107,9 @@ void editorMoveCursor(int key) {
             }
             break;
         case ARROW_DOWN:
-            if (e_config.cy != e_config.screenrows - 1) {
+            if (e_config.cy < e_config.numrows) {
                 e_config.cy++;
-            } 
+            }
             break;
         case ARROW_RIGHT:
             if (e_config.cx != e_config.screencols - 1) {
@@ -119,60 +122,52 @@ void editorMoveCursor(int key) {
 void editorProcessKeypress() {
     int c = editorReadKey();
 
-    switch (c) {
-        case CTRL_KEY('q'):
-            write(STDOUT_FILENO, "\x1b[2J", 4);
-            write(STDOUT_FILENO, "\x1b[H", 3);
-            exit(0);
-            break;
-        
-        case PAGE_UP:
-        case PAGE_DOWN:
-            {
-                int times = e_config.screenrows;
-                while (times--) {
-                    editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
-                }
-            }
-            break;
+    switch (c)
+    {
+    case CTRL_KEY('q'):
+        write(STDOUT_FILENO, "\x1b[2J", 4);
+        write(STDOUT_FILENO, "\x1b[H", 3);
+        exit(0);
+        break;
 
-        case HOME_KEY:
-            e_config.cx = 0;
-            break;
-        case END_KEY:
-            e_config.cx = e_config.screencols - 1;
-            break;
+    case PAGE_UP:
+    case PAGE_DOWN:
+    {
+        int times = e_config.screenrows;
+        while (times--)
+        {
+            editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+        }
+    }
+    break;
 
-        case ARROW_UP:
-        case ARROW_LEFT:
-        case ARROW_DOWN:
-        case ARROW_RIGHT:
-            editorMoveCursor(c);
-            break;
+    case HOME_KEY:
+        e_config.cx = 0;
+        break;
+    case END_KEY:
+        e_config.cx = e_config.screencols - 1;
+        break;
+
+    case ARROW_UP:
+    case ARROW_LEFT:
+    case ARROW_DOWN:
+    case ARROW_RIGHT:
+        editorMoveCursor(c);
+        break;
     }
 }
 
-/*** init ***/
-
-void initEditor() {
-    e_config.cx = 0;
-    e_config.cy = 0;
-    e_config.numrows = 0;
-    e_config.row = NULL;
-
-    if (getWindowSize(&e_config.screenrows, &e_config.screencols) == -1)
-        die("getWindowSize");
-}
-
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     enableRawMode();
     initEditor();
 
-    if (argc >= 2) {
+    if (argc >= 2)
+    {
         editorOpen(argv[1]);
     }
 
-    while (1) {
+    while (1)
+    {
         editorRefreshScreen();
         editorProcessKeypress();
     }
