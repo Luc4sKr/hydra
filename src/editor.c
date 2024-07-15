@@ -11,6 +11,7 @@ void initEditor() {
     e_config.cx = 0;
     e_config.cy = 0;
     e_config.rowoff = 0;
+    e_config.coloff = 0;
     e_config.numrows = 0;
     e_config.row = NULL;
 
@@ -25,6 +26,14 @@ void editorScroll() {
 
     if (e_config.cy >= e_config.rowoff + e_config.screenrows) {
         e_config.rowoff = e_config.cy - e_config.screenrows + 1;
+    }
+
+    if (e_config.cx < e_config.coloff) {
+        e_config.coloff = e_config.cx;
+    }
+
+    if (e_config.cx >= e_config.coloff + e_config.screencols) {
+        e_config.coloff = e_config.cx - e_config.screencols + 1;
     }
 }
 

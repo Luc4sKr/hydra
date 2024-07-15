@@ -57,12 +57,17 @@ void editorDrawRows(struct abuff *ab) {
                 abuffAppend(ab, "~", 1);
             }
         } else {
-            int len = e_config.row[filerow].size;
+            int len = e_config.row[filerow].size - e_config.coloff;
+            
+            if (len < 0) {
+                len = 0;
+            }
+
             if (len > e_config.screencols) {
                 len = e_config.screencols;
             }
 
-            abuffAppend(ab, e_config.row[filerow].chars, len);
+            abuffAppend(ab, &e_config.row[filerow].chars[e_config.coloff], len);
         }
 
         abuffAppend(ab, "\x1b[K", 3);
@@ -83,7 +88,8 @@ void editorRefreshScreen() {
     editorDrawRows(&ab);
 
     char buf[32];
-    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (e_config.cy - e_config.rowoff) + 1, e_config.cx + 1);
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", 
+        (e_config.cy - e_config.rowoff) + 1, (e_config.cx - e_config.coloff) + 1);
     abuffAppend(&ab, buf, strlen(buf));
 
     abuffAppend(&ab, "\x1b[?25h", 6);
@@ -112,9 +118,7 @@ void editorMoveCursor(int key) {
             }
             break;
         case ARROW_RIGHT:
-            if (e_config.cx != e_config.screencols - 1) {
-                e_config.cx++;
-            }
+            e_config.cx++;
             break;
     }
 }
@@ -122,38 +126,36 @@ void editorMoveCursor(int key) {
 void editorProcessKeypress() {
     int c = editorReadKey();
 
-    switch (c)
-    {
-    case CTRL_KEY('q'):
-        write(STDOUT_FILENO, "\x1b[2J", 4);
-        write(STDOUT_FILENO, "\x1b[H", 3);
-        exit(0);
-        break;
+    switch (c) {
+        case CTRL_KEY('q'):
+            write(STDOUT_FILENO, "\x1b[2J", 4);
+            write(STDOUT_FILENO, "\x1b[H", 3);
+            exit(0);
+            break;
 
-    case PAGE_UP:
-    case PAGE_DOWN:
-    {
-        int times = e_config.screenrows;
-        while (times--)
+        case PAGE_UP:
+        case PAGE_DOWN:
         {
-            editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+            int times = e_config.screenrows;
+            while (times--) {
+                editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+            }
         }
-    }
-    break;
-
-    case HOME_KEY:
-        e_config.cx = 0;
-        break;
-    case END_KEY:
-        e_config.cx = e_config.screencols - 1;
         break;
 
-    case ARROW_UP:
-    case ARROW_LEFT:
-    case ARROW_DOWN:
-    case ARROW_RIGHT:
-        editorMoveCursor(c);
-        break;
+        case HOME_KEY:
+            e_config.cx = 0;
+            break;
+        case END_KEY:
+            e_config.cx = e_config.screencols - 1;
+            break;
+
+        case ARROW_UP:
+        case ARROW_LEFT:
+        case ARROW_DOWN:
+        case ARROW_RIGHT:
+            editorMoveCursor(c);
+            break;
     }
 }
 
@@ -161,13 +163,11 @@ int main(int argc, char *argv[]) {
     enableRawMode();
     initEditor();
 
-    if (argc >= 2)
-    {
+    if (argc >= 2) {
         editorOpen(argv[1]);
     }
 
-    while (1)
-    {
+    while (1) {
         editorRefreshScreen();
         editorProcessKeypress();
     }
