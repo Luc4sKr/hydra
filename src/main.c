@@ -7,26 +7,10 @@
 #include <string.h>
 
 #include "config.h"
+#include "abuff.h"
 #include "fileio.h"
 #include "editor.h"
 #include "terminal.h"
-
-/*** append buffer ****/
-
-void abuffAppend(struct abuff *ab, const char *s, int len) {
-    char *new = realloc(ab->b, ab->len + len);
-
-    if (new == NULL)
-        return;
-
-    memcpy(&new[ab->len], s, len);
-    ab->b = new;
-    ab->len += len;
-}
-
-void abuffFree(struct abuff *ab) {
-    free(ab->b);
-}
 
 /*** output ***/
 

@@ -8,7 +8,8 @@ CFLAGS = -Wall -Wextra -pedantic -std=c99
 SRCS = $(SRC)/main.c 	  \
 		$(SRC)/editor.c   \
 		$(SRC)/fileio.c   \
-		$(SRC)/terminal.c
+		$(SRC)/terminal.c \
+		$(SRC)/abuff.c
 
 OBJS = $(patsubst $(SRC)/%.c,$(OBJ)/%.o,$(SRCS))
 

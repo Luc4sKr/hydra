@@ -24,12 +24,6 @@ struct editorConfig {
 
 extern struct editorConfig e_config;
 
-// append buffer
-struct abuff {
-    char* b;
-    int len;
-};
-
 enum editorKey {
     // valores grandes para não gerarem conflito com
     // nenhum pressionamento de tecla comum
