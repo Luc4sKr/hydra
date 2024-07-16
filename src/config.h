@@ -4,7 +4,7 @@
 #define HYDRA_VERSION "0.0.1"
 
 #define CTRL_KEY(k) ((k) & 0x1f)
-
 #define ABUFF_INIT {NULL, 0}
+#define HYDRA_TAB_STOP 8
 
 #endif

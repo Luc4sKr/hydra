@@ -11,7 +11,7 @@
 #include "editor.h"
 #include "terminal.h"
 
-void editorOpen(char* filename) {
+void editorOpenFile(char* filename) {
     FILE* fp = fopen(filename, "r");
 
     if (!fp) {

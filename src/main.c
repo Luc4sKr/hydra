@@ -57,7 +57,7 @@ void editorDrawRows(struct abuff *ab) {
                 abuffAppend(ab, "~", 1);
             }
         } else {
-            int len = e_config.row[filerow].size - e_config.coloff;
+            int len = e_config.row[filerow].rsize - e_config.coloff;
             
             if (len < 0) {
                 len = 0;
@@ -67,7 +67,7 @@ void editorDrawRows(struct abuff *ab) {
                 len = e_config.screencols;
             }
 
-            abuffAppend(ab, &e_config.row[filerow].chars[e_config.coloff], len);
+            abuffAppend(ab, &e_config.row[filerow].render[e_config.coloff], len);
         }
 
         abuffAppend(ab, "\x1b[K", 3);
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
     initEditor();
 
     if (argc >= 2) {
-        editorOpen(argv[1]);
+        editorOpenFile(argv[1]);
     }
 
     while (1) {

@@ -40,6 +40,35 @@ void editorScroll() {
     }
 }
 
+void editorUpdateRow(editor_row* row) {
+    int tabs = 0;
+
+    for (int j = 0; j < row->size; j++) {
+        if (row->chars[j] == '\t') {
+            tabs++;
+        }
+    }
+
+    free(row->render);
+    row->render = malloc(row->size + tabs * (HYDRA_TAB_STOP - 1) + 1);
+
+    int idx = 0;
+    for (int j = 0; j < row->size; j++) {
+        if (row->chars[j] == '\t') {
+            row->render[idx++] = ' ';
+            while (idx % HYDRA_TAB_STOP != 0) {
+                row->render[idx++] = ' ';
+            }
+        } else {
+            row->render[idx++] = row->chars[j];
+        }
+    }
+
+    row->render[idx] = '\0';
+    row->rsize = idx;
+}
+
+
 void editorAppendRows(char* s, size_t len) {
     e_config.row = realloc(e_config.row, sizeof(editor_row) * (e_config.numrows + 1));
 
@@ -47,7 +76,12 @@ void editorAppendRows(char* s, size_t len) {
     e_config.row[at].size = len;
     e_config.row[at].chars = malloc(len + 1);
     memcpy(e_config.row[at].chars, s, len);
+    
     e_config.row[at].chars[len] = '\0';
+    e_config.row[at].rsize = 0;
+    e_config.row[at].render = NULL;
+    editorUpdateRow(&e_config.row[at]);
+
     e_config.numrows++;
 }
 

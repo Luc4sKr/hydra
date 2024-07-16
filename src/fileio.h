@@ -1,6 +1,6 @@
 #ifndef FILEIO_H
 #define FILEIO_H
 
-void editorOpen(char* filename);
+void editorOpenFile(char* filename);
 
 #endif

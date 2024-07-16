@@ -5,7 +5,9 @@
 
 typedef struct editor_row {
     int size;
-    char *chars;
+    int rsize;
+    char* chars;
+    char* render;
 } editor_row;
 
 struct editorConfig {
@@ -47,6 +49,7 @@ enum editorKey {
 
 void initEditor();
 void editorScroll();
+void editorUpdateRow(editor_row* row);
 void editorAppendRows(char* s, size_t len);
 void editorMoveCursor(int key);
 void editorProcessKeypress();
