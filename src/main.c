@@ -12,8 +12,6 @@
 #include "editor.h"
 #include "terminal.h"
 
-/*** output ***/
-
 void editorDrawRows(struct abuff *ab) {
     for (int i = 0; i < e_config.screenrows; i++) {
         int filerow = i + e_config.rowoff;
