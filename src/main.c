@@ -71,7 +71,7 @@ void editorRefreshScreen() {
 
     char buf[32];
     snprintf(buf, sizeof(buf), "\x1b[%d;%dH", 
-        (e_config.cy - e_config.rowoff) + 1, (e_config.cx - e_config.coloff) + 1);
+        (e_config.cy - e_config.rowoff) + 1, (e_config.rx - e_config.coloff) + 1);
     abuffAppend(&ab, buf, strlen(buf));
 
     abuffAppend(&ab, "\x1b[?25h", 6);

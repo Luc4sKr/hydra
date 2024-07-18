@@ -13,6 +13,7 @@ struct editorConfig e_config;
 void initEditor() {
     e_config.cx = 0;
     e_config.cy = 0;
+    e_config.rx = 0;
     e_config.rowoff = 0;
     e_config.coloff = 0;
     e_config.numrows = 0;
@@ -22,7 +23,27 @@ void initEditor() {
         die("getWindowSize");
 }
 
+int editorRowCxToRx(editor_row* row, int cx) {
+    int rx = 0;
+
+    for (int i = 0; i < cx; i++) {
+        if (row->chars[i] == '\t') {
+            rx += (HYDRA_TAB_STOP - 1) - (rx % HYDRA_TAB_STOP);
+        }
+
+        rx++;
+    }
+
+    return rx;
+}
+
 void editorScroll() {
+    e_config.rx = 0;
+
+    if (e_config.cy < e_config.numrows) {
+        e_config.rx = editorRowCxToRx(&e_config.row[e_config.cy], e_config.cx);
+    }
+
     if (e_config.cy < e_config.rowoff) {
         e_config.rowoff = e_config.cy;
     }
@@ -31,12 +52,12 @@ void editorScroll() {
         e_config.rowoff = e_config.cy - e_config.screenrows + 1;
     }
 
-    if (e_config.cx < e_config.coloff) {
-        e_config.coloff = e_config.cx;
+    if (e_config.rx < e_config.coloff) {
+        e_config.coloff = e_config.rx;
     }
 
-    if (e_config.cx >= e_config.coloff + e_config.screencols) {
-        e_config.coloff = e_config.cx - e_config.screencols + 1;
+    if (e_config.rx >= e_config.coloff + e_config.screencols) {
+        e_config.coloff = e_config.rx - e_config.screencols + 1;
     }
 }
 
@@ -67,7 +88,6 @@ void editorUpdateRow(editor_row* row) {
     row->render[idx] = '\0';
     row->rsize = idx;
 }
-
 
 void editorAppendRows(char* s, size_t len) {
     e_config.row = realloc(e_config.row, sizeof(editor_row) * (e_config.numrows + 1));

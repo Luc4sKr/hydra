@@ -13,6 +13,7 @@ typedef struct editor_row {
 struct editorConfig {
     int cx;
     int cy;
+    int rx;
     int rowoff;
     int coloff;
     int screenrows;
@@ -42,6 +43,7 @@ enum editorKey {
 };
 
 void initEditor();
+int editorRowCxToRx(editor_row* row, int cx);
 void editorScroll();
 void editorUpdateRow(editor_row* row);
 void editorAppendRows(char* s, size_t len);
