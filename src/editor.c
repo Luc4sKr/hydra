@@ -179,7 +179,9 @@ void editorProcessKeypress() {
             e_config.cx = 0;
             break;
         case END_KEY:
-            e_config.cx = e_config.screencols - 1;
+            if (e_config.cy < e_config.numrows) {
+                e_config.cx = e_config.row[e_config.cy].size;
+            } 
             break;
 
         case ARROW_UP:
