@@ -20,6 +20,7 @@ struct editorConfig {
     int screencols;
     int numrows;
     editor_row* row;
+    char* filename;
     struct termios orig_termios;
 };
 
@@ -43,11 +44,11 @@ enum editorKey {
 };
 
 void initEditor();
-int editorRowCxToRx(editor_row* row, int cx);
 void editorScroll();
 void editorUpdateRow(editor_row* row);
 void editorAppendRows(char* s, size_t len);
 void editorMoveCursor(int key);
 void editorProcessKeypress();
+void editorRefreshScreen();
 
 #endif
