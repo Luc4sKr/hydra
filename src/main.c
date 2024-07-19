@@ -1,11 +1,3 @@
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-
 #include "config.h"
 #include "fileio.h"
 #include "editor.h"
@@ -18,6 +10,8 @@ int main(int argc, char *argv[]) {
     if (argc >= 2) {
         editorOpenFile(argv[1]);
     }
+
+    editorSetStatusMessage("HELP: Ctrl-Q = quit");
 
     while (1) {
         editorRefreshScreen();

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "editor.h"
 #include "terminal.h"
@@ -20,12 +21,15 @@ void initEditor() {
     e_config.numrows = 0;
     e_config.row = NULL;
     e_config.filename = NULL;
+    e_config.statusmsg[0] = '\0';
+    e_config.statusmsg_time = 0;
 
     if (getWindowSize(&e_config.screenrows, &e_config.screencols) == -1) {
         die("getWindowSize");
     }
 
-    e_config.screenrows -= 1;
+    // linhas usadas para o status bar
+    e_config.screenrows -= 2;
 }
 
 int editorRowCxToRx(editor_row* row, int cx) {
@@ -271,7 +275,24 @@ void editorDrawStatusBar(struct abuff* ab) {
     }
 
     abuffAppend(ab, "\x1b[m", 3); // volta para as cores padrao
-} 
+    abuffAppend(ab, "\r\n", 2);
+}
+
+void editorDrawMessageBar(struct abuff* ab) {
+    abuffAppend(ab, "\x1b[K", 3);
+    int msglen = strlen(e_config.statusmsg);
+
+    if (msglen > e_config.screencols) {
+        msglen = e_config.screencols;
+    }
+
+    // apaga a mensagem depois de 5s
+    // if (msglen && time(NULL) - e_config.statusmsg_time < 5) {
+    //     abuffAppend(ab, e_config.statusmsg, msglen);
+    // }
+
+    abuffAppend(ab, e_config.statusmsg, msglen);
+}
 
 void editorRefreshScreen() {
     editorScroll();
@@ -283,6 +304,7 @@ void editorRefreshScreen() {
 
     editorDrawRows(&ab);
     editorDrawStatusBar(&ab);
+    editorDrawMessageBar(&ab);
 
     char buf[32];
     snprintf(buf, sizeof(buf), "\x1b[%d;%dH", 
@@ -295,3 +317,10 @@ void editorRefreshScreen() {
     abuffFree(&ab);
 }
 
+void editorSetStatusMessage(const char* fmt, ...) {
+    va_list ap;
+    va_start(ap,  fmt);
+    vsnprintf(e_config.statusmsg, sizeof(e_config.statusmsg), fmt, ap);
+    va_end(ap);
+    e_config.statusmsg_time = time(NULL);
+}
