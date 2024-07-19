@@ -3,21 +3,27 @@
 
 #include <termio.h>
 
+typedef struct editor_row {
+    int size;
+    int rsize;
+    char* chars;
+    char* render;
+} editor_row;
+
 struct editorConfig {
     int cx;
     int cy;
-    int screen_rows;
-    int screen_cols;
+    int rx;
+    int rowoff;
+    int coloff;
+    int screenrows;
+    int screencols;
+    int numrows;
+    editor_row* row;
     struct termios orig_termios;
 };
 
-struct editorConfig e_config;
-
-// append buffer
-struct abuff {
-    char* b;
-    int len;
-};
+extern struct editorConfig e_config;
 
 enum editorKey {
     // valores grandes para não gerarem conflito com
@@ -35,5 +41,13 @@ enum editorKey {
 
     DEL_KEY = 1008,
 };
+
+void initEditor();
+int editorRowCxToRx(editor_row* row, int cx);
+void editorScroll();
+void editorUpdateRow(editor_row* row);
+void editorAppendRows(char* s, size_t len);
+void editorMoveCursor(int key);
+void editorProcessKeypress();
 
 #endif

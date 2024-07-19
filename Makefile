@@ -5,9 +5,13 @@ BIN = ./bin
 
 CFLAGS = -Wall -Wextra -pedantic -std=c99
 
-SRCS = $(SRC)/main.c
+SRCS = $(SRC)/main.c 	  \
+		$(SRC)/editor.c   \
+		$(SRC)/fileio.c   \
+		$(SRC)/terminal.c \
+		$(SRC)/abuff.c
 
-OBJS = $(OBJ)/main.o
+OBJS = $(patsubst $(SRC)/%.c,$(OBJ)/%.o,$(SRCS))
 
 all: $(BIN)/out
 
@@ -20,6 +24,7 @@ $(OBJ):
 $(BIN)/out: $(OBJS) | $(BIN)
 	$(CC) $(OBJS) -o $(BIN)/out
 
+# Regra para compilar arquivos objeto
 $(OBJ)/%.o: $(SRC)/%.c | $(OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
 
