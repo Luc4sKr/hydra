@@ -3,9 +3,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "editor.h"
 #include "terminal.h"
+#include "abuff.h"
 #include "config.h"
 
 struct editorConfig e_config;
@@ -18,9 +20,16 @@ void initEditor() {
     e_config.coloff = 0;
     e_config.numrows = 0;
     e_config.row = NULL;
+    e_config.filename = NULL;
+    e_config.statusmsg[0] = '\0';
+    e_config.statusmsg_time = 0;
 
-    if (getWindowSize(&e_config.screenrows, &e_config.screencols) == -1)
+    if (getWindowSize(&e_config.screenrows, &e_config.screencols) == -1) {
         die("getWindowSize");
+    }
+
+    // linhas usadas para o status bar
+    e_config.screenrows -= 2;
 }
 
 int editorRowCxToRx(editor_row* row, int cx) {
@@ -191,4 +200,127 @@ void editorProcessKeypress() {
             editorMoveCursor(c);
             break;
     }
+}
+
+void editorDrawRows(struct abuff *ab) {
+    for (int i = 0; i < e_config.screenrows; i++) {
+        int filerow = i + e_config.rowoff;
+        if (filerow >= e_config.numrows) {
+            if (e_config.numrows == 0 && i == e_config.screenrows / 3) {
+                char welcome[80];
+                int welcomelen = snprintf(welcome, sizeof(welcome), "HYDRA EDITOR -- VERSION %s", HYDRA_VERSION);
+                
+                if (welcomelen > e_config.screencols) {
+                    welcomelen = e_config.screencols;
+                }
+
+                int padding = (e_config.screencols - welcomelen) / 2;
+                if (padding) {
+                    abuffAppend(ab, "~", 1);
+                    padding--;
+                }
+
+                while (padding--) {
+                    abuffAppend(ab, " ", 1);
+                }
+
+                abuffAppend(ab, welcome, welcomelen);
+            } else {
+                abuffAppend(ab, "~", 1);
+            }
+        } else {
+            int len = e_config.row[filerow].rsize - e_config.coloff;
+            
+            if (len < 0) {
+                len = 0;
+            }
+
+            if (len > e_config.screencols) {
+                len = e_config.screencols;
+            }
+
+            abuffAppend(ab, &e_config.row[filerow].render[e_config.coloff], len);
+        }
+
+        abuffAppend(ab, "\x1b[K", 3);
+        abuffAppend(ab, "\r\n", 2);
+    }
+}
+
+void editorDrawStatusBar(struct abuff* ab) {
+    char status[80], rstatus[80];
+    
+    abuffAppend(ab, "\x1b[7m", 4); // deixa as cores invertidas
+
+    int len = snprintf(status, sizeof(status), "%.20s - %d lines",
+        e_config.filename ? e_config.filename : "[No Name]", e_config.numrows);
+
+    int rlen = snprintf(rstatus, sizeof(rstatus), "%d/%d",
+        e_config.cy + 1, e_config.numrows);
+
+    if (len > e_config.screencols) {
+        len = e_config.screencols;
+    }
+
+    abuffAppend(ab, status, len);
+
+    while (len < e_config.screencols) {
+        if (e_config.screencols - len == rlen) {
+            abuffAppend(ab, rstatus, rlen);
+            break;
+        } else {
+            abuffAppend(ab, " ", 1);
+            len++;
+        }
+    }
+
+    abuffAppend(ab, "\x1b[m", 3); // volta para as cores padrao
+    abuffAppend(ab, "\r\n", 2);
+}
+
+void editorDrawMessageBar(struct abuff* ab) {
+    abuffAppend(ab, "\x1b[K", 3);
+    int msglen = strlen(e_config.statusmsg);
+
+    if (msglen > e_config.screencols) {
+        msglen = e_config.screencols;
+    }
+
+    // apaga a mensagem depois de 5s
+    // if (msglen && time(NULL) - e_config.statusmsg_time < 5) {
+    //     abuffAppend(ab, e_config.statusmsg, msglen);
+    // }
+
+    abuffAppend(ab, e_config.statusmsg, msglen);
+}
+
+void editorRefreshScreen() {
+    editorScroll();
+
+    struct abuff ab = ABUFF_INIT;
+
+    abuffAppend(&ab, "\x1b[?25l", 6);
+    abuffAppend(&ab, "\x1b[H", 3);
+
+    editorDrawRows(&ab);
+    editorDrawStatusBar(&ab);
+    editorDrawMessageBar(&ab);
+
+    char buf[32];
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", 
+        (e_config.cy - e_config.rowoff) + 1, (e_config.rx - e_config.coloff) + 1);
+    abuffAppend(&ab, buf, strlen(buf));
+
+    abuffAppend(&ab, "\x1b[?25h", 6);
+
+    write(STDOUT_FILENO, ab.b, ab.len);
+    abuffFree(&ab);
+}
+
+void editorSetStatusMessage(const char* fmt, ...) {
+    va_list ap;
+    va_start(ap,  fmt);
+    vsnprintf(e_config.statusmsg, sizeof(e_config.statusmsg), fmt, ap);
+    va_end(ap);
+    e_config.statusmsg_time = time(NULL);
 }

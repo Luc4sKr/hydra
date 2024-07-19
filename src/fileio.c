@@ -12,6 +12,9 @@
 #include "terminal.h"
 
 void editorOpenFile(char* filename) {
+    free(e_config.filename);
+    e_config.filename = strdup(filename);
+
     FILE* fp = fopen(filename, "r");
 
     if (!fp) {
